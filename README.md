@@ -14,7 +14,7 @@ ls | ./index-html.sh > index.html
 ```
 
 ## consulting maps
-head at pokyah.github.io/pokyah-maps/index.html
+head at https://pokyah.github.io/pokyah-maps/index.html
 
 
 
