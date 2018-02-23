@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title></title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+    <link href='./styles/leaflet.extra-markers.min.css' rel='stylesheet' />
+    <link href='./styles/leaflet.extra-markers.min.css' rel='stylesheet' />
+    <link href='./styles/MarkerCluster.css' rel='stylesheet' />
+    <link href='./styles/MarkerCluster.Default.css' rel='stylesheet' />
+    <link href='./styles/leaflet.groupedlayercontrol.min.css' rel='stylesheet' />
+    <link href='./styles/Control.Geocoder.css' rel='stylesheet'/>
+    <link href='./styles/L.Control.Locate.scss' rel='stylesheet'/>
+
+    <link rel='stylesheet' href='https://unpkg.com/leaflet@1.0.3/dist/leaflet.css'
+      integrity='sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ=='
+      crossorigin=''/>
+
+    <link href='https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css' rel='stylesheet' />
+    <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css'>
+
+
+    <script src='https://unpkg.com/leaflet@1.0.3/dist/leaflet.js'
+      integrity='sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg=='
+      crossorigin=''></script>
+
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
+
+    <script src='./plugins/leaflet-hash.js'></script>
+    <script src='./plugins/leaflet.extra-markers.min.js'></script>
+    <script src='./plugins/leaflet.markercluster.js'></script>
+    <script src='./plugins/leaflet.groupedlayercontrol.min.js'></script>
+    <script src='./plugins/Control.Geocoder.js'></script>
+    <script src='./plugins/L.Control.Locate.js'></script>
+
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
+        .legend {
+            line-height: 18px;
+            color: #555;
+            background-color: #fff;
+            padding : 0.5em;
+            display: none;
+        }
+        #legendToggle{
+            position: fixed;
+            bottom: 15px;
+            z-index: 1000;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id='map'></div>
+    <div id='legendToggle' class='ion-ios-information' onclick='toggleLegend();'></div>
+    <div id='legend'>
+                <p>SYNOP RMI = station synoptique automatique IRM -> données 10-min</p>
+                <p>SYNOP Belgocontrol/Meteowing = station synoptique aéroports -> données horaires</p>
+                <p>CLIM RR = station climatologique avec relevé quotidien des précipitations à 8h</p>
+                <p>CLIM TT = station climatologique avec relevé quotidien des températures extrêmes à 8h</p>
+    </div>
+
+    <script>
+
+        /**
+        * declaring utilities functions
+        */
+            var defaultMarker = {
+                    icon : '',
+                    markerColor: 'cyan',
+                    iconColor: 'white',
+                    shape: 'circle',
+                },
+                buildmarker = function( iconName, color ){
+                    defaultMarker.icon = iconName;
+                    defaultMarker.markerColor = color;
+                    return defaultMarker;
+                },
+                buildlayer = function( layerJson, layerName, layerFilter, layerIcon, layerCluster ){
+                    layerName = L.geoJson(layerJson,  {
+                        filter : layerFilter,
+                        pointToLayer: function(feature, latlng) {
+                            return new L.Marker(latlng, {
+                                icon : layerIcon
+                            });
+                        },
+                        onEachFeature: function( feature, marker ){
+                            if(layerName === irmSynopticRMI || layerName === irmSynopticAirport || layerName === irmClimTT || layerName === irmClimRR ){
+                                return marker.bindPopup('<h2>'+ feature.properties.NAME + '</h2><br>' +'IRM<br>'+ feature.properties.NETWORK +'<br>Coordonnées :<br>' + marker._latlng.lat + ', ' +  marker._latlng.lng );
+                            }
+                            else{
+                                return marker.bindPopup('<h2>'+ feature.properties.city + '</h2><br>' +'PAMESEB<br>'+ feature.properties.connection +'<br>Coordonnées :<br>' + marker._latlng.lat + ', ' +  marker._latlng.lng );
+                            }
+
+                        }
+                    });
+                    layerCluster
+                        .addLayer( layerName );
+                    layerCluster
+                        .getAttribution = function() {
+                                return "Weather Stations : <a href='https://www.meteo.be'> IRM-KMI</a> |" + "<a href='https://www.pameseb.be'> Pameseb ASBL</a> |" + "<a href='https://www.carah.be'> CARAH ASBL</a>";
+                        };
+                    //map.addLayer(layerCluster);
+                };
+
+        /**
+        * preparing the map
+        */
+        var map = L.map('map').setView([50.2569,4.6967], 9),
+            baseLayers = {
+                'Streets': L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png',{
+                    attribution: "Map data: &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+                }).addTo(map),
+                'Topo': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                    attribution: "Map data: &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>, <a href='http://viewfinderpanoramas.org'>SRTM</a> | Map style: &copy; <a href='https://opentopomap.org'>OpenTopoMap</a> (<a href='https://creativecommons.org/licenses/by-sa/3.0/'>CC-BY-SA</a>)"
+                }),
+                'Terrain' : L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/outdoors-v10/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoidGdvb3NzZW4iLCJhIjoiY2lvMWdtMWRoMDB4eHdka2w3NmZqYnc2eCJ9.m-LmO4634t2nlcsDm1Lndw',{
+                    attribution : "Terrain style © <a href='https://www.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+                }),
+                'Google Earth' : L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
+                    attribution: "Satellite imagery : &copy; <a href='https://www.maps.google.com/'>Google maps</a>",
+                    subdomains:['mt0','mt1','mt2','mt3']
+                })
+
+            },
+            hash = new L.Hash(map); // add center coordinates in map URL
+            geocoder = L.Control.geocoder({
+                defaultMarkGeocode: false
+            })
+            .on('markgeocode', function(e) {
+                var bbox = e.geocode.bbox;
+                var poly = L.polygon([
+                     bbox.getSouthEast(),
+                     bbox.getNorthEast(),
+                     bbox.getNorthWest(),
+                     bbox.getSouthWest()
+                ]);
+                map.fitBounds(poly.getBounds());
+            })
+            .addTo(map);
+
+        /**
+        * declaring variables for IRM Stations
+        */
+            var
+            irmSynopticRMI = {},
+            irmSynopticAirport = {},
+            irmClimTT = {},
+            irmClimRR= {},
+            irmSynopticRMICluster = new L.MarkerClusterGroup({ disableClusteringAtZoom: 9 }),
+            irmSynopticAirportCluster = new L.MarkerClusterGroup({ disableClusteringAtZoom: 9 }),
+            irmClimTTCluster= new L.MarkerClusterGroup({ disableClusteringAtZoom: 9 }),
+            irmClimRRCluster= new L.MarkerClusterGroup({ disableClusteringAtZoom: 9 }),
+            irmSynopticRMIMarker = L.ExtraMarkers.icon(
+                buildmarker( 'ion-earth', 'cyan' )
+            ),
+            irmSynopticAirportMarker = L.ExtraMarkers.icon(
+                buildmarker( 'ion-android-plane', 'cyan' )
+            ),
+            irmClimTTMarker = L.ExtraMarkers.icon(
+                buildmarker( 'ion-thermometer', 'cyan' )
+            ),
+            irmClimRRMarker = L.ExtraMarkers.icon(
+                buildmarker( 'ion-ios-rainy', 'cyan' )
+            ),
+            irmSynopticRMIFilter = function(feature) {
+                if (feature.properties.NETWORK === 'SYNOP RMI' ) return true
+            },
+            irmSynopticAirportFilter = function(feature) {
+                if (feature.properties.NETWORK === 'SYNOP Belgocontrol' || feature.properties.NETWORK === 'SYNOP MeteoWing') return true
+            },
+            irmClimTTFilter = function(feature) {
+                if (feature.properties.NETWORK === 'CLIM TT') return true
+            },
+            irmClimRRFilter = function(feature) {
+                if (feature.properties.NETWORK === 'CLIM RR') return true
+            };
+
+        /**
+        * call to geojsonIRM, filtering in 2 distincts layers and implementing each layer with popUp and clustering
+        */
+            $.getJSON( './data/listStationsIRMMJ.geojson', function( data ) {
+                buildlayer( data, irmSynopticRMI, irmSynopticRMIFilter, irmSynopticRMIMarker, irmSynopticRMICluster );
+                buildlayer( data, irmSynopticAirport, irmSynopticAirportFilter, irmSynopticAirportMarker, irmSynopticAirportCluster );
+                buildlayer( data, irmClimTT, irmClimTTFilter, irmClimTTMarker, irmClimTTCluster );
+                buildlayer( data, irmClimRR, irmClimRRFilter, irmClimRRMarker, irmClimRRCluster );
+            });
+
+        /**
+        * declaring variables for Pameseb Stations
+        */
+            var pamesebManual = {},
+                pamesebHayes = {},
+                pamesebGSM = {},
+                pamesebCarah = {},
+                pamesebManualCluster = new L.MarkerClusterGroup({ disableClusteringAtZoom: 9 }),
+                pamesebHayesCluster = new L.MarkerClusterGroup({ disableClusteringAtZoom: 9 }),
+                pamesebGSMCluster = new L.MarkerClusterGroup({ disableClusteringAtZoom: 9 }),
+                pamesebCarahCluster = new L.MarkerClusterGroup({ disableClusteringAtZoom: 9 }),
+                pamesebHayesMarker = L.ExtraMarkers.icon(
+                    buildmarker( 'ion-wifi', 'orange-dark' )
+                ),
+                pamesebManualMarker = L.ExtraMarkers.icon(
+                    buildmarker( 'ion-android-person', 'orange-dark' )
+                ),
+                pamesebGSMMarker = L.ExtraMarkers.icon(
+                    buildmarker( 'ion-android-call', 'orange-dark' )
+                ),
+                pamesebCarahMarker = L.ExtraMarkers.icon(
+                    buildmarker( 'ion-erlenmeyer-flask', 'yellow' )
+                ),
+                pamesebManualFilter = function(feature) {
+                    if (feature.properties.commune !== ' CARAH' && feature.properties.connection === ' manuelle') return true
+                },
+                pamesebHayesFilter = function(feature) {
+                    if (feature.properties.commune !== ' CARAH' && feature.properties.connection === ' hayes') return true
+                };
+                pamesebGSMFilter = function(feature) {
+                    if (feature.properties.commune !== ' CARAH' && feature.properties.connection === ' gsm') return true
+                };
+                pamesebCarahFilter = function(feature) {
+                    if (feature.properties.commune === ' CARAH') return true
+                };
+
+
+        /**
+        * call to geojsonPameseb, filtering in 2 distincts layers and implementing each layer with popUp and clustering
+        */
+            $.getJSON( './data/listStationsPamesebFull.geojson', function( data ) {
+                buildlayer( data, pamesebManual, pamesebManualFilter, pamesebManualMarker, pamesebManualCluster );
+                buildlayer( data, pamesebHayes, pamesebHayesFilter, pamesebHayesMarker, pamesebHayesCluster );
+                buildlayer( data, pamesebGSM, pamesebGSMFilter, pamesebGSMMarker, pamesebGSMCluster );
+                buildlayer( data, pamesebCarah, pamesebCarahFilter, pamesebCarahMarker, pamesebCarahCluster );
+
+                pamesebManualCluster.addTo( map );
+                pamesebHayesCluster.addTo( map );
+                pamesebGSMCluster.addTo( map );
+                pamesebCarahCluster.addTo( map );
+
+            });
+
+        /**
+        * call to rainData WMS from KNMI
+        */
+            var rainfall = L.tileLayer.wms('https://geoservices.knmi.nl/cgi-bin/RADNL_OPER_R___25PCPRR_L3.cgi?',{
+            layers: 'RADNL_OPER_R___25PCPRR_L3_COLOR',
+            format: 'image/png',
+            transparent: true,
+            attribution: "Rain Data : <a href='http://adaguc.knmi.nl/contents/webservices/WebServices_RADNL_OPER_R___25PCPRR_L3.html'>KNMI</a>",
+            opacity:0.5
+        }).addTo(map);
+
+        /**
+        * controlling the refreshing interval of the rainDARADR WMS
+        */
+            var refreshWMS = function() {
+                    rainfall.setUrl('https://geoservices.knmi.nl/cgi-bin/RADNL_OPER_R___25PCPRR_L3.cgi?' + new Date().getTime() + '&');
+                    rainfall.redraw();
+                };
+            refreshWMS = setInterval(refreshWMS, 300000);
+
+        /**
+        * building the controls for layer selection
+        */
+            var
+                legend = L.control({position: 'bottomright'}),
+                groupedOverlays = {
+                    'IRM': {
+                        'IRM Synoptic RMI': irmSynopticRMICluster,
+                        'IRM Synoptic Airport': irmSynopticAirportCluster,
+                        'IRM Clim TT': irmClimTTCluster,
+                        'IRM Clim RR': irmClimRRCluster
+                    },
+                    'Pameseb': {
+                        'Pameseb manual': pamesebManualCluster,
+                        'Pameseb Hayes' : pamesebHayesCluster,
+                        'Pameseb GSM' : pamesebGSMCluster,
+                    },
+                    'CARAH': {
+                        'Carah manual': pamesebCarahCluster,
+                    },
+                    'Extra': {
+                        'Rain Radar KNMI' : rainfall,
+                    }
+                };
+
+            L.control.groupedLayers(
+                baseLayers,
+                groupedOverlays
+            ).addTo(map);
+
+            L.control.scale({
+                position: 'bottomleft',
+                imperial: false
+            }).addTo(map);
+
+            L.control.locate({
+                flyTo: true,
+                setView : 'always',
+                keepCurrentZoomLevel : false,
+                strings: {
+                    title: 'Show me where I am !'
+                }
+            }).addTo(map);
+
+            /**
+            * Building a legend box
+            */
+                var legend = L.control({position: 'bottomright'});
+
+                legend.onAdd = function (map) {
+                    var div = L.DomUtil.create('div', 'info legend');
+                    div.innerHTML = $('#legend').html();
+                    return div;
+                };
+                legend.addTo(map);
+
+                var showLegend = false;  // default value showing the legend
+
+                var toggleLegend = function(){
+                    if(showLegend === true){
+                    /* use jquery to select your DOM elements that has the class 'legend' */
+                       $('.legend').hide();
+                       showLegend = false;
+                    }else{
+                       $('.legend').show();
+                       showLegend = true;
+                    }
+                }
+
+
+    </script>
+</body>
+</html>

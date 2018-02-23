@@ -1,0 +1,41 @@
+city,commune,connection,alt,lon,lat
+ Libramont, Libramont, hayes, 476.0,5.36076,49.92667
+ Chassepierre, Florenville, hayes, 353.0,5.25873,49.69917
+ Schockville, Attert, hayes, 343.0,5.76345,49.76038
+ Michamps, Bastogne, gsm, 496.0,5.80831,50.03761
+ Amberloup, Saint-Ode, hayes, 389.0,5.55073,50.03384
+ Chimay, Chimay, hayes, 260.0,4.25208,50.11048
+ Ferrieres, Ferrieres, hayes, 239.0,5.60265,50.39886
+ Haut-le-Wastia, Anhée, hayes, 221.0,4.84478,50.29753
+ Jemelle, Rochefort, hayes, 237.0,5.2428,50.16598
+ Louvain-la-Neuve, Ottignies, hayes, 136.0,4.64164,50.669
+ Floriffoux, Floreffe, hayes, 93.0,4.76334,50.45223
+ Emmels, Saint-Vith, hayes, 539.0,6.08472,50.30504
+ Bergeval, Trois-Ponts, hayes, 411.0,5.86865,50.35143
+ Elsenborn, Elsenborn, gsm, 626.0,6.24363,50.44424
+ Leuze, Eghezée, hayes, 178.0,4.89572,50.55478
+ Sombreffe, Sombreffe, hayes, 146.0,4.60084,50.52945
+ Ruette, Virton, gsm, 317.0,5.57745,49.53851
+ Geer, Geer, gsm, 129.0,5.18256,50.67206
+ Couthuin, Héron, gsm, 172.0,5.15194,50.52315
+ Alleur, Ans, hayes, 162.0,5.49638,50.68279
+ Feluy, Seneffe, hayes, 114.0,4.23666,50.54306
+ Seny, Tinlot, hayes, 275.0,5.39636,50.45894
+ Casteau, Soignies, hayes, 95.0,4.04858,50.53771
+ Thuillies, Thuin, hayes, 155.0,4.33975,50.29239
+ Esplechin, Tournai, hayes, 50.0,3.3045,50.57911
+ Roux-Miroir, Incourt, gsm, 137.0,4.78626,50.71706
+ Baisy-Thy, Genappe, gsm, 129.0,4.48753,50.58375
+ Willerzie, Gedinne, hayes, 502.0,4.84671,49.95405
+ Jevoumont, Theux, manuelle, 290.0,5.79911,50.51957
+ Humain, Marche-en-Famenne, gsm, 291.0,5.25536,50.19362
+ Thy-le-chateau, Walcourt, manuelle, 195.0,4.43,50.28
+ Wasmes, Peruwelz, manuelle, 43.0,3.55,50.55
+ Enghien, CARAH, manuelle,,4.03708,50.69826
+ Helchin, CARAH, manuelle,,3.38436,50.7405
+ Rongy, CARAH, manuelle,,3.38651,50.50887
+ Ath, CARAH, manuelle,,3.77515,50.62467
+ Warneton, CARAH, manuelle,,2.96145,50.76215
+ Melles, CARAH, manuelle,,3.48086,50.64737
+ Wiheries-Dour, CARAH, manuelle,,3.7532,50.38579
+ Waudrez-Binche, CARAH, manuelle,,4.15102,50.41439
