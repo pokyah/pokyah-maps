@@ -1,11 +1,6 @@
 
 #!/bin/sh
  
-echo '<html><body>'
-sed 's/^.*/<a href="&">&<\/a><br\/>/'
-echo '</body></html>'
-
-
 echo '<!doctype html>
 <html lang="en">
   <head>
@@ -19,7 +14,7 @@ echo '<!doctype html>
     <title>My interactive datavisualization outputs!</title>
   </head>
   <body>'
-sed 's/^.*/<a href="&">&<\/a><br\/>/'
+ls -d */ | sed 's/^.*/<a href="&">&<\/a><br\/>/'
 echo '<!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
